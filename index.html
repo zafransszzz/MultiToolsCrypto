@@ -1,99 +1,127 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Crypto Multi-Tools - Harga Crypto, Konverter, dan Kalkulator Fee">
-    <title>Crypto Multi-Tools</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #0f0f0f; color: white; text-align: center; margin: 0; }
-        h1 { background: #00ff88; color: black; padding: 15px; margin: 0; }
-        .container { max-width: 500px; margin: auto; padding: 20px; }
-        .card { background: #1a1a1a; padding: 15px; margin: 10px 0; border-radius: 10px; }
-        input, select, button { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
-        button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
-        .ads { background: #222; padding: 10px; border-radius: 5px; margin: 15px 0; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Crypto Multi-Tools: cek harga banyak crypto real-time, konversi crypto ke Rupiah, dan hitung fee trading dengan mudah.">
+  <title>Crypto Multi-Tools</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0f0f0f; color: white; text-align: center; margin: 0; padding: 0; }
+    h1 { background: #00ff88; color: black; padding: 15px; margin: 0; }
+    .container { max-width: 500px; margin: auto; padding: 20px; }
+    .card { background: #1a1a1a; padding: 15px; margin: 10px 0; border-radius: 10px; }
+    input, select, button { width: 90%; padding: 10px; margin: 10px auto; border-radius: 5px; border: none; display: block; }
+    button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
+    .ads { background: #222; padding: 10px; border-radius: 5px; margin: 15px 0; }
+  </style>
 </head>
 <body>
 
-    <h1>Crypto Multi-Tools</h1>
-    <div class="container">
+  <h1>Crypto Multi-Tools</h1>
+  <div class="container">
 
-        <!-- Live Harga Crypto -->
-        <div class="card">
-            <h2>📊 Live Harga Crypto</h2>
-            <p>BTC: <span id="btc-price">Loading...</span></p>
-            <p>ETH: <span id="eth-price">Loading...</span></p>
-        </div>
-
-        <!-- Konverter Crypto -->
-        <div class="card">
-            <h2>💱 Konverter Crypto ⇆ Rupiah</h2>
-            <input type="number" id="crypto-amount" placeholder="Jumlah Crypto">
-            <select id="crypto-type">
-                <option value="BTC">BTC</option>
-                <option value="ETH">ETH</option>
-            </select>
-            <button onclick="convertCrypto()">Konversi ke Rupiah</button>
-            <p id="convert-result"></p>
-        </div>
-
-        <!-- Kalkulator Fee Trading -->
-        <div class="card">
-            <h2>💹 Kalkulator Fee Trading</h2>
-            <input type="number" id="trade-amount" placeholder="Jumlah Transaksi (Rp)">
-            <input type="number" id="fee-percent" placeholder="Fee (%)" value="0.1">
-            <button onclick="calcFee()">Hitung Fee</button>
-            <p id="fee-result"></p>
-        </div>
-
-        <!-- Slot Iklan -->
-        <div class="ads">
-            <p>Pasang iklan di sini</p>
-            <!-- Kode AdSense / Adsterra -->
-        </div>
-
+    <!-- Live Harga Crypto -->
+    <div class="card harga">
+      <h2>📊 Live Harga Crypto</h2>
+      <p>Loading...</p>
     </div>
 
+    <!-- Konverter Crypto -->
+    <div class="card">
+      <h2>💱 Konverter Crypto ⇄ Rupiah</h2>
+      <input type="number" id="crypto-amount" placeholder="Jumlah Crypto">
+      <select id="crypto-type"></select>
+      <button onclick="convertCrypto()">Konversi ke Rupiah</button>
+      <p id="convert-result"></p>
+    </div>
+
+    <!-- Kalkulator Fee Trading -->
+    <div class="card">
+      <h2>💹 Kalkulator Fee Trading</h2>
+      <input type="number" id="trade-amount" placeholder="Jumlah Transaksi (Rp)">
+      <input type="number" id="fee-percent" placeholder="Fee (%)" value="0.1">
+      <button onclick="calcFee()">Hitung Fee</button>
+      <p id="fee-result"></p>
+    </div>
+
+    <!-- Slot Iklan -->
+    <div class="ads">
+      <p>Pasang iklan di sini</p>
+      <!-- Tambahkan kode AdSense atau Adsterra di sini -->
+    </div>
+
+  </div>
+
 <script>
+const coinList = [
+  { id: "bitcoin", symbol: "BTC" },
+  { id: "ethereum", symbol: "ETH" },
+  { id: "dogecoin", symbol: "DOGE" },
+  { id: "cardano", symbol: "ADA" },
+  { id: "binancecoin", symbol: "BNB" },
+  { id: "solana", symbol: "SOL" },
+  { id: "ripple", symbol: "XRP" },
+  { id: "tron", symbol: "TRX" }
+];
+
 async function getPrices() {
-    try {
-        let res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=idr");
-        let data = await res.json();
-        document.getElementById("btc-price").innerText = "Rp " + data.bitcoin.idr.toLocaleString();
-        document.getElementById("eth-price").innerText = "Rp " + data.ethereum.idr.toLocaleString();
-        window.cryptoPrices = data; // simpan harga
-    } catch (e) {
-        document.getElementById("btc-price").innerText = "Error";
-        document.getElementById("eth-price").innerText = "Error";
-    }
+  try {
+    const ids = coinList.map(c => c.id).join(",");
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=idr`);
+    const data = await res.json();
+
+    // Tampilkan harga
+    const container = document.querySelector('.card.harga');
+    let html = '<h2>📊 Live Harga Crypto</h2>';
+    coinList.forEach(c => {
+      if (data[c.id]) {
+        html += `<p>${c.symbol}: Rp ${data[c.id].idr.toLocaleString()}</p>`;
+      }
+    });
+    container.innerHTML = html;
+
+    // Dropdown konverter
+    const dropdown = document.getElementById("crypto-type");
+    dropdown.innerHTML = "";
+    coinList.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.symbol;
+      dropdown.appendChild(opt);
+    });
+
+    window.cryptoPrices = data;
+  } catch (e) {
+    document.querySelector('.card.harga').innerHTML = '<h2>📊 Live Harga Crypto</h2><p>Error mengambil data.</p>';
+  }
 }
 
 function convertCrypto() {
-    let amount = parseFloat(document.getElementById("crypto-amount").value);
-    let type = document.getElementById("crypto-type").value;
-    if (!amount || !window.cryptoPrices) {
-        document.getElementById("convert-result").innerText = "Masukkan jumlah & tunggu harga ter-update!";
-        return;
-    }
-    let price = type === "BTC" ? window.cryptoPrices.bitcoin.idr : window.cryptoPrices.ethereum.idr;
-    document.getElementById("convert-result").innerText = "≈ Rp " + (amount * price).toLocaleString();
+  const amount = parseFloat(document.getElementById("crypto-amount").value);
+  const type = document.getElementById("crypto-type").value;
+  const resultEl = document.getElementById("convert-result");
+  if (!amount || !window.cryptoPrices || !window.cryptoPrices[type]) {
+    resultEl.innerText = "Masukkan jumlah & tunggu harga ter-update!";
+    return;
+  }
+  const price = window.cryptoPrices[type].idr;
+  resultEl.innerText = `≈ Rp ${(amount * price).toLocaleString()}`;
 }
 
 function calcFee() {
-    let tradeAmount = parseFloat(document.getElementById("trade-amount").value);
-    let feePercent = parseFloat(document.getElementById("fee-percent").value);
-    if (!tradeAmount || !feePercent) {
-        document.getElementById("fee-result").innerText = "Masukkan jumlah transaksi dan fee!";
-        return;
-    }
-    let fee = (tradeAmount * feePercent) / 100;
-    document.getElementById("fee-result").innerText = "Fee: Rp " + fee.toLocaleString();
+  const tradeAmount = parseFloat(document.getElementById("trade-amount").value);
+  const feePercent = parseFloat(document.getElementById("fee-percent").value);
+  const resultEl = document.getElementById("fee-result");
+  if (!tradeAmount || !feePercent) {
+    resultEl.innerText = "Masukkan jumlah transaksi dan fee!";
+    return;
+  }
+  const fee = (tradeAmount * feePercent) / 100;
+  resultEl.innerText = `Fee: Rp ${fee.toLocaleString()}`;
 }
 
 getPrices();
-setInterval(getPrices, 60000); // update tiap menit
+setInterval(getPrices, 60000);
 </script>
 
 </body>
