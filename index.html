@@ -3,91 +3,114 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="Crypto Multi-Tools - Daftar token lengkap mirip CoinGecko, chart, search, dan sort." />
-  <title>Crypto Market Tracker</title>
+  <meta name="description" content="Crypto Dashboard - Top Gainers & Losers, full market table, chart. Data via CoinGecko." />
+  <title>Crypto Dashboard — Gainers & Losers</title>
 
-  <!-- Chart.js CDN -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root{
-      --bg:#0f1115; --card:#121316; --muted:#9aa4b2; --accent:#00d28a;
+      --bg:#081018; --card:#0f1720; --muted:#98a4b3; --accent:#00d28a;
+      --danger:#ff6b6b; --success:#6be281; --glass: rgba(255,255,255,0.03);
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#e6eef3}
-    header{background:linear-gradient(90deg,#071016,#071a12);padding:16px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-    h1{margin:0;font-size:18px;color:var(--accent)}
-    .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
-    .container{max-width:1100px;margin:20px auto;padding:0 16px}
-    .card{background:var(--card);border-radius:10px;padding:14px}
-    input.search{padding:10px;border-radius:8px;border:none;background:#0b0d10;color:#e6eef3;width:260px}
-    select, button{padding:10px;border-radius:8px;border:none;background:#081010;color:#e6eef3;cursor:pointer}
-    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
-    thead th{color:var(--muted);font-weight:600;text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer}
-    tbody tr{border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s}
-    tbody tr:hover{background:rgba(255,255,255,0.02);cursor:pointer}
-    td{padding:12px;vertical-align:middle}
-    .coin-name{display:flex;gap:10px;align-items:center}
-    .coin-name img{width:28px;height:28px;border-radius:50%}
-    .badge{font-size:12px;color:var(--muted)}
-    .green{color:#6be281} .red{color:#ff7b7b}
-    .center{text-align:center}
+    body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:#e6eef3}
+    header{display:flex;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(90deg,#071016,#071a12)}
+    h1{margin:0;color:var(--accent);font-size:18px}
+    .controls{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    input.search{padding:8px 10px;border-radius:8px;border:none;background:#071018;color:#e6eef3;width:260px}
+    select,button{padding:8px 10px;border-radius:8px;border:none;background:#0b1216;color:#e6eef3;cursor:pointer}
+    .container{max-width:1200px;margin:18px auto;padding:0 16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .card{background:var(--card);border-radius:10px;padding:12px;box-shadow:0 6px 20px rgba(0,0,0,0.5)}
+    .card h2{margin:0 0 8px 0;color:#cfeee0;font-size:15px}
+    .list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow:auto;padding-right:6px}
+    .item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:var(--glass);cursor:pointer}
+    .item:hover{background:rgba(255,255,255,0.02)}
+    .coin {display:flex;gap:10px;align-items:center}
+    .coin img{width:28px;height:28px;border-radius:50%}
     .small{font-size:12px;color:var(--muted)}
-    .footer-note{margin-top:12px;color:var(--muted);font-size:13px}
-
-    /* modal chart */
-    .modal{position:fixed;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:50}
+    .green{color:var(--success)} .red{color:var(--danger)}
+    /* main table */
+    .table-wrap{margin-top:12px;overflow:auto;max-height:520px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{position:sticky;top:0;background:rgba(11,16,20,0.9);padding:10px;text-align:left;color:var(--muted);font-weight:700;border-bottom:1px solid rgba(255,255,255,0.03);cursor:pointer}
+    tbody tr{border-bottom:1px solid rgba(255,255,255,0.03)}
+    td{padding:10px;vertical-align:middle}
+    .center{text-align:center}
+    .muted{color:var(--muted)}
+    .footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;color:var(--muted);font-size:13px}
+    /* modal */
+    .modal{position:fixed;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:60;padding:16px}
     .modal.show{display:flex}
-    .modal-card{width:95%;max-width:900px;background:#0b0f10;padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+    .modal-card{width:100%;max-width:1000px;background:#061017;padding:16px;border-radius:12px}
     .modal-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-    .close-btn{background:#111;padding:8px 10px;border-radius:8px;border:none;color:#fff;cursor:pointer}
-    @media(max-width:640px){
-      thead th:nth-child(3), td:nth-child(3), thead th:nth-child(5), td:nth-child(5){display:none}
+    .close-btn{background:#081018;padding:8px 10px;border-radius:8px;border:none;color:#fff;cursor:pointer}
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr}
     }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>Crypto Market Tracker</h1>
-    <div class="controls" style="margin-left:auto">
-      <input id="search" class="search" placeholder="Search by name or symbol (e.g. BTC, doge)"/>
+    <h1>Crypto Dashboard</h1>
+    <div class="controls">
+      <input id="search" class="search" placeholder="Search (name or symbol)"/>
       <select id="perPage">
         <option value="25">25 / page</option>
         <option value="50">50 / page</option>
         <option value="100">100 / page</option>
-        <option value="250">250 / page</option>
       </select>
       <button id="refreshBtn">Refresh</button>
+      <select id="intervalSel" title="Auto refresh interval">
+        <option value="15000">15s</option>
+        <option value="30000">30s</option>
+        <option value="60000">60s</option>
+      </select>
     </div>
   </header>
 
   <div class="container">
-    <div class="card">
-      <div style="overflow:auto">
+    <div class="grid">
+      <div class="card">
+        <h2>Top Gainers (24h)</h2>
+        <div id="gainers" class="list"><div class="small muted">Loading...</div></div>
+      </div>
+      <div class="card">
+        <h2>Top Losers (24h)</h2>
+        <div id="losers" class="list"><div class="small muted">Loading...</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h2>All Markets</h2>
+      <div class="table-wrap">
         <table id="coinsTable" role="table" aria-label="coins">
           <thead>
             <tr>
               <th data-sort="market_cap_rank">#</th>
               <th data-sort="name">Coin</th>
-              <th data-sort="current_price">Price (IDR)</th>
-              <th data-sort="market_cap">Market Cap</th>
+              <th data-sort="current_price">Price (USD)</th>
+              <th data-sort="price_change_percentage_1h_in_currency">1h%</th>
+              <th data-sort="price_change_percentage_24h_in_currency">24h%</th>
+              <th data-sort="price_change_percentage_7d_in_currency">7d%</th>
               <th data-sort="total_volume">Volume 24h</th>
-              <th data-sort="price_change_percentage_1h_in_currency">1h %</th>
-              <th data-sort="price_change_percentage_24h_in_currency">24h %</th>
+              <th data-sort="market_cap">Market Cap</th>
             </tr>
           </thead>
           <tbody id="coinsBody">
-            <tr><td colspan="7" class="center small">Loading coins...</td></tr>
+            <tr><td colspan="8" class="center muted small">Loading coins...</td></tr>
           </tbody>
         </table>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
-        <div class="small footer-note">Data via CoinGecko • Update tiap 60 detik</div>
+      <div class="footer">
+        <div class="small muted" id="footerNote">Data via CoinGecko</div>
         <div>
           <button id="prevBtn">Prev</button>
-          <span id="pageInfo" class="small" style="margin:0 8px"></span>
+          <span id="pageInfo" class="small"></span>
           <button id="nextBtn">Next</button>
         </div>
       </div>
@@ -100,7 +123,7 @@
       <div class="modal-header">
         <div>
           <strong id="modalTitle">Coin</strong>
-          <div id="modalSub" class="small" style="color:var(--muted)"></div>
+          <div id="modalSub" class="small muted"></div>
         </div>
         <div>
           <button id="btn1d">1D</button>
@@ -109,25 +132,23 @@
           <button class="close-btn" id="closeModal">Close</button>
         </div>
       </div>
-      <canvas id="chartCanvas" height="200"></canvas>
-      <div style="margin-top:8px" class="small" id="chartNote"></div>
+      <canvas id="chartCanvas" height="220"></canvas>
+      <div id="chartNote" class="small muted" style="margin-top:8px"></div>
     </div>
   </div>
 
 <script>
 /*
-  Crypto Market Tracker
-  - Source: CoinGecko public API
-  - Features: list, search, sort, pagination, chart (Chart.js)
-  - Copy-paste this file as index.html
+  Crypto Dashboard — Top Gainers & Top Losers + full market table + chart
+  Data: CoinGecko public API
+  Copy-paste this file as index.html
 */
 
 const API_BASE = 'https://api.coingecko.com/api/v3';
-let coins = [];        // fetched coin list
+let coins = [], filtered = [];
 let currentSort = { key: 'market_cap_rank', dir: 'asc' };
-let currentPage = 1;
-let perPage = 25;
-let filtered = [];
+let currentPage = 1, perPage = 25;
+let autoRefreshTimer = null;
 
 // DOM
 const coinsBody = document.getElementById('coinsBody');
@@ -137,6 +158,9 @@ const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const pageInfo = document.getElementById('pageInfo');
 const refreshBtn = document.getElementById('refreshBtn');
+const intervalSel = document.getElementById('intervalSel');
+const gainersEl = document.getElementById('gainers');
+const losersEl = document.getElementById('losers');
 const modal = document.getElementById('modal');
 const modalTitle = document.getElementById('modalTitle');
 const modalSub = document.getElementById('modalSub');
@@ -144,28 +168,31 @@ const chartCanvas = document.getElementById('chartCanvas').getContext('2d');
 const chartNote = document.getElementById('chartNote');
 let chartInstance = null;
 
-// initial
+// init
 perPageSelect.value = perPage;
 attachHeaderSort();
 loadCoins();
 
 // events
-searchInput.addEventListener('input', () => { currentPage = 1; renderTable(); });
-perPageSelect.addEventListener('change', () => { perPage = parseInt(perPageSelect.value); currentPage = 1; renderTable(); });
-prevBtn.addEventListener('click', () => { if (currentPage>1) currentPage--; renderTable(); });
-nextBtn.addEventListener('click', () => { currentPage++; renderTable(); });
-refreshBtn.addEventListener('click', () => loadCoins(true));
+searchInput.addEventListener('input', ()=>{ currentPage = 1; renderTable(); });
+perPageSelect.addEventListener('change', ()=>{ perPage = parseInt(perPageSelect.value); currentPage = 1; renderTable(); });
+prevBtn.addEventListener('click', ()=>{ if(currentPage>1) currentPage--; renderTable(); });
+nextBtn.addEventListener('click', ()=>{ currentPage++; renderTable(); });
+refreshBtn.addEventListener('click', ()=> loadCoins(true));
+intervalSel.addEventListener('change', ()=> {
+  resetAutoRefresh();
+});
 document.getElementById('closeModal').addEventListener('click', closeModal);
-document.getElementById('btn1d').addEventListener('click', () => loadCoinChart(modal.dataset.id, 1));
-document.getElementById('btn7d').addEventListener('click', () => loadCoinChart(modal.dataset.id, 7));
-document.getElementById('btn30d').addEventListener('click', () => loadCoinChart(modal.dataset.id, 30));
+document.getElementById('btn1d').addEventListener('click', ()=> loadCoinChart(modal.dataset.id, 1));
+document.getElementById('btn7d').addEventListener('click', ()=> loadCoinChart(modal.dataset.id, 7));
+document.getElementById('btn30d').addEventListener('click', ()=> loadCoinChart(modal.dataset.id, 30));
+searchInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ currentPage = 1; renderTable(); } });
 
+// load coins list (per_page up to 250)
 async function loadCoins(force=false){
   try{
-    coinsBody.innerHTML = `<tr><td colspan="7" class="center small">Loading coins...</td></tr>`;
-    // per_page max 250
-    const per_page = 250;
-    const res = await fetch(`${API_BASE}/coins/markets?vs_currency=idr&order=market_cap_desc&per_page=${per_page}&page=1&sparkline=false&price_change_percentage=1h,24h,7d`);
+    coinsBody.innerHTML = `<tr><td colspan="8" class="center small muted">Loading coins...</td></tr>`;
+    const res = await fetch(`${API_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=1h,24h,7d`);
     const data = await res.json();
     coins = data.map(c => ({
       id: c.id,
@@ -178,18 +205,27 @@ async function loadCoins(force=false){
       market_cap_rank: c.market_cap_rank,
       price_change_percentage_1h_in_currency: c.price_change_percentage_1h_in_currency ?? 0,
       price_change_percentage_24h_in_currency: c.price_change_percentage_24h_in_currency ?? 0,
-      price_change_percentage_7d_in_currency: c.price_change_percentage_7d_in_currency ?? 0
+      price_change_percentage_7d_in_currency: c.price_change_percentage_7d_in_currency ?? 0,
+      high_24h: c.high_24h,
+      low_24h: c.low_24h
     }));
     currentPage = 1;
     renderTable();
-    // auto-refresh every 60s
-    if(!force) setTimeout(() => loadCoins(), 60000);
+    renderTopGainersLosers();
+    if(!force) resetAutoRefresh();
   }catch(err){
     console.error(err);
-    coinsBody.innerHTML = `<tr><td colspan="7" class="center small">Gagal mengambil data. Coba refresh.</td></tr>`;
+    coinsBody.innerHTML = `<tr><td colspan="8" class="center small muted">Gagal mengambil data. Klik Refresh.</td></tr>`;
   }
 }
 
+function resetAutoRefresh(){
+  if(autoRefreshTimer) clearTimeout(autoRefreshTimer);
+  const interval = parseInt(intervalSel.value || 15000);
+  autoRefreshTimer = setTimeout(()=> loadCoins(true), interval);
+}
+
+// header sort attach
 function attachHeaderSort(){
   document.querySelectorAll('thead th').forEach(th=>{
     th.addEventListener('click', ()=>{
@@ -206,6 +242,7 @@ function attachHeaderSort(){
   });
 }
 
+// render table with search, sort, pagination
 function renderTable(){
   const q = searchInput.value.trim().toLowerCase();
   filtered = coins.filter(c => (c.name + ' ' + c.symbol).toLowerCase().includes(q));
@@ -229,9 +266,8 @@ function renderTable(){
   const start = (currentPage-1)*perPage;
   const pageData = filtered.slice(start, start+perPage);
 
-  // render rows
   if(pageData.length === 0){
-    coinsBody.innerHTML = `<tr><td colspan="7" class="center small">No results.</td></tr>`;
+    coinsBody.innerHTML = `<tr><td colspan="8" class="center small muted">No results.</td></tr>`;
   } else {
     coinsBody.innerHTML = '';
     for(const c of pageData){
@@ -239,48 +275,99 @@ function renderTable(){
       tr.innerHTML = `
         <td class="small">${c.market_cap_rank ?? '-'}</td>
         <td>
-          <div class="coin-name">
+          <div class="coin">
             <img src="${c.image}" alt="${c.symbol}"/>
             <div>
-              <div style="font-weight:600">${c.name} <span class="badge"> ${c.symbol}</span></div>
-              <div class="small"> </div>
+              <div style="font-weight:700">${c.name} <span class="small muted"> ${c.symbol}</span></div>
             </div>
           </div>
         </td>
-        <td style="font-weight:600">Rp ${formatNumber(c.current_price)}</td>
-        <td class="small">Rp ${formatNumber(c.market_cap)}</td>
-        <td class="small">Rp ${formatNumber(c.total_volume)}</td>
+        <td style="font-weight:700">$${formatNumber(c.current_price)}</td>
         <td class="${(c.price_change_percentage_1h_in_currency||0) >= 0 ? 'green' : 'red'}">${formatPercent(c.price_change_percentage_1h_in_currency)}</td>
         <td class="${(c.price_change_percentage_24h_in_currency||0) >= 0 ? 'green' : 'red'}">${formatPercent(c.price_change_percentage_24h_in_currency)}</td>
+        <td class="${(c.price_change_percentage_7d_in_currency||0) >= 0 ? 'green' : 'red'}">${formatPercent(c.price_change_percentage_7d_in_currency)}</td>
+        <td class="small"> $${formatNumber(c.total_volume)}</td>
+        <td class="small"> $${formatNumber(c.market_cap)}</td>
       `;
-      // click to open chart
       tr.addEventListener('click', ()=> openModal(c));
       coinsBody.appendChild(tr);
     }
   }
 
   pageInfo.innerText = `Page ${currentPage} / ${totalPages} • ${total.toLocaleString()} coins`;
-  // disable buttons if needed
   prevBtn.disabled = currentPage <= 1;
   nextBtn.disabled = currentPage >= totalPages;
 }
 
+// helpers
 function formatNumber(n){
   if(n === null || n === undefined) return '-';
-  return Math.round(n).toLocaleString('id-ID');
+  // round large numbers for display
+  if(Number(n) >= 1e9) return (Math.round(n/1e6)/1000).toLocaleString() + 'B';
+  if(Number(n) >= 1e6) return (Math.round(n/1e3)/1000).toLocaleString() + 'M';
+  return (Math.round(n*100)/100).toLocaleString();
 }
 function formatPercent(p){
   if(p === null || p === undefined) return '-';
   return `${p.toFixed(2)}%`;
 }
 
-// Modal & Chart
+// top gainers & losers
+function renderTopGainersLosers(){
+  // sort copy by 24h change
+  const sorted = [...coins].sort((a,b)=> (b.price_change_percentage_24h_in_currency||0) - (a.price_change_percentage_24h_in_currency||0));
+  const gainers = sorted.slice(0,10);
+  const losers = [...sorted].reverse().slice(0,10);
+
+  gainersEl.innerHTML = '';
+  losersEl.innerHTML = '';
+
+  gainers.forEach(c => {
+    const it = document.createElement('div');
+    it.className = 'item';
+    it.innerHTML = `
+      <div class="coin">
+        <img src="${c.image}" alt="${c.symbol}">
+        <div>
+          <div style="font-weight:700">${c.name} <span class="small muted">${c.symbol}</span></div>
+          <div class="small muted">Vol $${formatNumber(c.total_volume)}</div>
+        </div>
+      </div>
+      <div class="${(c.price_change_percentage_24h_in_currency||0) >= 0 ? 'green' : 'red'}" style="font-weight:700">
+        ${formatPercent(c.price_change_percentage_24h_in_currency)}
+      </div>
+    `;
+    it.addEventListener('click', ()=> openModal(c));
+    gainersEl.appendChild(it);
+  });
+
+  losers.forEach(c => {
+    const it = document.createElement('div');
+    it.className = 'item';
+    it.innerHTML = `
+      <div class="coin">
+        <img src="${c.image}" alt="${c.symbol}">
+        <div>
+          <div style="font-weight:700">${c.name} <span class="small muted">${c.symbol}</span></div>
+          <div class="small muted">Vol $${formatNumber(c.total_volume)}</div>
+        </div>
+      </div>
+      <div class="${(c.price_change_percentage_24h_in_currency||0) >= 0 ? 'green' : 'red'}" style="font-weight:700">
+        ${formatPercent(c.price_change_percentage_24h_in_currency)}
+      </div>
+    `;
+    it.addEventListener('click', ()=> openModal(c));
+    losersEl.appendChild(it);
+  });
+}
+
+// modal & chart
 async function openModal(coin){
   modal.dataset.id = coin.id;
   modalTitle.innerText = `${coin.name} (${coin.symbol})`;
-  modalSub.innerText = `Price: Rp ${formatNumber(coin.current_price)} • Market Cap: Rp ${formatNumber(coin.market_cap)}`;
+  modalSub.innerText = `Price: $${formatNumber(coin.current_price)} • Market Cap: $${formatNumber(coin.market_cap)}`;
   modal.classList.add('show');
-  await loadCoinChart(coin.id, 7); // default 7 days
+  await loadCoinChart(coin.id, 7);
 }
 
 function closeModal(){
@@ -292,24 +379,20 @@ async function loadCoinChart(id, days=7){
   try{
     chartNote.innerText = 'Loading chart...';
     if(chartInstance){ chartInstance.destroy(); chartInstance = null; }
-    // CoinGecko market_chart (vs_currency=idr)
-    const res = await fetch(`${API_BASE}/coins/${id}/market_chart?vs_currency=idr&days=${days}`);
+    const res = await fetch(`${API_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`);
     const data = await res.json();
-    // data.prices = [[timestamp, price], ...]
     const labels = data.prices.map(p => {
       const dt = new Date(p[0]);
-      // format label depending on days
       if(days <= 1) return dt.toLocaleTimeString();
       return dt.toLocaleDateString();
     });
     const prices = data.prices.map(p => p[1]);
-    // draw chart
     chartInstance = new Chart(chartCanvas, {
       type: 'line',
       data: {
         labels,
-        datasets:[{
-          label: `${id} price (IDR)`,
+        datasets: [{
+          label: `${id} price (USD)`,
           data: prices,
           fill: true,
           tension: 0.15,
@@ -319,27 +402,20 @@ async function loadCoinChart(id, days=7){
       options:{
         responsive:true,
         maintainAspectRatio:false,
-        scales:{
-          x:{ display:true, ticks:{color:'#9aa4b2'} },
-          y:{ display:true, ticks:{color:'#9aa4b2'} }
-        },
-        plugins:{
-          legend:{display:false},
-          tooltip:{mode:'index',intersect:false}
-        }
+        scales:{ x:{ticks:{color:'#9aa4b2'}}, y:{ticks:{color:'#9aa4b2'}} },
+        plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} }
       }
     });
     chartNote.innerText = `Chart last ${days} day(s). Data from CoinGecko.`;
   }catch(err){
     console.error(err);
-    chartNote.innerText = 'Gagal memuat chart.';
+    chartNote.innerText = 'Failed to load chart.';
   }
 }
 
-// initial keyboard: Enter on search goes to first page
-searchInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ currentPage = 1; renderTable(); } });
-
+// start auto-refresh
+resetAutoRefresh();
 </script>
 
 </body>
-</html>
+  </html>
