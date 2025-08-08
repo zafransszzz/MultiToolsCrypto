@@ -1,127 +1,344 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Crypto Multi-Tools: cek harga banyak crypto real-time, konversi crypto ke Rupiah, dan hitung fee trading dengan mudah.">
-  <title>Crypto Multi-Tools</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Crypto Multi-Tools - Daftar token lengkap mirip CoinGecko, chart, search, dan sort." />
+  <title>Crypto Market Tracker</title>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body { font-family: Arial, sans-serif; background: #0f0f0f; color: white; text-align: center; margin: 0; padding: 0; }
-    h1 { background: #00ff88; color: black; padding: 15px; margin: 0; }
-    .container { max-width: 500px; margin: auto; padding: 20px; }
-    .card { background: #1a1a1a; padding: 15px; margin: 10px 0; border-radius: 10px; }
-    input, select, button { width: 90%; padding: 10px; margin: 10px auto; border-radius: 5px; border: none; display: block; }
-    button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
-    .ads { background: #222; padding: 10px; border-radius: 5px; margin: 15px 0; }
+    :root{
+      --bg:#0f1115; --card:#121316; --muted:#9aa4b2; --accent:#00d28a;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#e6eef3}
+    header{background:linear-gradient(90deg,#071016,#071a12);padding:16px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+    h1{margin:0;font-size:18px;color:var(--accent)}
+    .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    .container{max-width:1100px;margin:20px auto;padding:0 16px}
+    .card{background:var(--card);border-radius:10px;padding:14px}
+    input.search{padding:10px;border-radius:8px;border:none;background:#0b0d10;color:#e6eef3;width:260px}
+    select, button{padding:10px;border-radius:8px;border:none;background:#081010;color:#e6eef3;cursor:pointer}
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+    thead th{color:var(--muted);font-weight:600;text-align:left;padding:10px;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer}
+    tbody tr{border-bottom:1px solid rgba(255,255,255,0.03);transition:background .12s}
+    tbody tr:hover{background:rgba(255,255,255,0.02);cursor:pointer}
+    td{padding:12px;vertical-align:middle}
+    .coin-name{display:flex;gap:10px;align-items:center}
+    .coin-name img{width:28px;height:28px;border-radius:50%}
+    .badge{font-size:12px;color:var(--muted)}
+    .green{color:#6be281} .red{color:#ff7b7b}
+    .center{text-align:center}
+    .small{font-size:12px;color:var(--muted)}
+    .footer-note{margin-top:12px;color:var(--muted);font-size:13px}
+
+    /* modal chart */
+    .modal{position:fixed;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:50}
+    .modal.show{display:flex}
+    .modal-card{width:95%;max-width:900px;background:#0b0f10;padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    .close-btn{background:#111;padding:8px 10px;border-radius:8px;border:none;color:#fff;cursor:pointer}
+    @media(max-width:640px){
+      thead th:nth-child(3), td:nth-child(3), thead th:nth-child(5), td:nth-child(5){display:none}
+    }
   </style>
 </head>
 <body>
 
-  <h1>Crypto Multi-Tools</h1>
+  <header>
+    <h1>Crypto Market Tracker</h1>
+    <div class="controls" style="margin-left:auto">
+      <input id="search" class="search" placeholder="Search by name or symbol (e.g. BTC, doge)"/>
+      <select id="perPage">
+        <option value="25">25 / page</option>
+        <option value="50">50 / page</option>
+        <option value="100">100 / page</option>
+        <option value="250">250 / page</option>
+      </select>
+      <button id="refreshBtn">Refresh</button>
+    </div>
+  </header>
+
   <div class="container">
-
-    <!-- Live Harga Crypto -->
-    <div class="card harga">
-      <h2>📊 Live Harga Crypto</h2>
-      <p>Loading...</p>
-    </div>
-
-    <!-- Konverter Crypto -->
     <div class="card">
-      <h2>💱 Konverter Crypto ⇄ Rupiah</h2>
-      <input type="number" id="crypto-amount" placeholder="Jumlah Crypto">
-      <select id="crypto-type"></select>
-      <button onclick="convertCrypto()">Konversi ke Rupiah</button>
-      <p id="convert-result"></p>
-    </div>
+      <div style="overflow:auto">
+        <table id="coinsTable" role="table" aria-label="coins">
+          <thead>
+            <tr>
+              <th data-sort="market_cap_rank">#</th>
+              <th data-sort="name">Coin</th>
+              <th data-sort="current_price">Price (IDR)</th>
+              <th data-sort="market_cap">Market Cap</th>
+              <th data-sort="total_volume">Volume 24h</th>
+              <th data-sort="price_change_percentage_1h_in_currency">1h %</th>
+              <th data-sort="price_change_percentage_24h_in_currency">24h %</th>
+            </tr>
+          </thead>
+          <tbody id="coinsBody">
+            <tr><td colspan="7" class="center small">Loading coins...</td></tr>
+          </tbody>
+        </table>
+      </div>
 
-    <!-- Kalkulator Fee Trading -->
-    <div class="card">
-      <h2>💹 Kalkulator Fee Trading</h2>
-      <input type="number" id="trade-amount" placeholder="Jumlah Transaksi (Rp)">
-      <input type="number" id="fee-percent" placeholder="Fee (%)" value="0.1">
-      <button onclick="calcFee()">Hitung Fee</button>
-      <p id="fee-result"></p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+        <div class="small footer-note">Data via CoinGecko • Update tiap 60 detik</div>
+        <div>
+          <button id="prevBtn">Prev</button>
+          <span id="pageInfo" class="small" style="margin:0 8px"></span>
+          <button id="nextBtn">Next</button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Slot Iklan -->
-    <div class="ads">
-      <p>Pasang iklan di sini</p>
-      <!-- Tambahkan kode AdSense atau Adsterra di sini -->
+  <!-- Modal for chart -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <strong id="modalTitle">Coin</strong>
+          <div id="modalSub" class="small" style="color:var(--muted)"></div>
+        </div>
+        <div>
+          <button id="btn1d">1D</button>
+          <button id="btn7d">7D</button>
+          <button id="btn30d">30D</button>
+          <button class="close-btn" id="closeModal">Close</button>
+        </div>
+      </div>
+      <canvas id="chartCanvas" height="200"></canvas>
+      <div style="margin-top:8px" class="small" id="chartNote"></div>
     </div>
-
   </div>
 
 <script>
-const coinList = [
-  { id: "bitcoin", symbol: "BTC" },
-  { id: "ethereum", symbol: "ETH" },
-  { id: "dogecoin", symbol: "DOGE" },
-  { id: "cardano", symbol: "ADA" },
-  { id: "binancecoin", symbol: "BNB" },
-  { id: "solana", symbol: "SOL" },
-  { id: "ripple", symbol: "XRP" },
-  { id: "tron", symbol: "TRX" }
-];
+/*
+  Crypto Market Tracker
+  - Source: CoinGecko public API
+  - Features: list, search, sort, pagination, chart (Chart.js)
+  - Copy-paste this file as index.html
+*/
 
-async function getPrices() {
-  try {
-    const ids = coinList.map(c => c.id).join(",");
-    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=idr`);
+const API_BASE = 'https://api.coingecko.com/api/v3';
+let coins = [];        // fetched coin list
+let currentSort = { key: 'market_cap_rank', dir: 'asc' };
+let currentPage = 1;
+let perPage = 25;
+let filtered = [];
+
+// DOM
+const coinsBody = document.getElementById('coinsBody');
+const searchInput = document.getElementById('search');
+const perPageSelect = document.getElementById('perPage');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const pageInfo = document.getElementById('pageInfo');
+const refreshBtn = document.getElementById('refreshBtn');
+const modal = document.getElementById('modal');
+const modalTitle = document.getElementById('modalTitle');
+const modalSub = document.getElementById('modalSub');
+const chartCanvas = document.getElementById('chartCanvas').getContext('2d');
+const chartNote = document.getElementById('chartNote');
+let chartInstance = null;
+
+// initial
+perPageSelect.value = perPage;
+attachHeaderSort();
+loadCoins();
+
+// events
+searchInput.addEventListener('input', () => { currentPage = 1; renderTable(); });
+perPageSelect.addEventListener('change', () => { perPage = parseInt(perPageSelect.value); currentPage = 1; renderTable(); });
+prevBtn.addEventListener('click', () => { if (currentPage>1) currentPage--; renderTable(); });
+nextBtn.addEventListener('click', () => { currentPage++; renderTable(); });
+refreshBtn.addEventListener('click', () => loadCoins(true));
+document.getElementById('closeModal').addEventListener('click', closeModal);
+document.getElementById('btn1d').addEventListener('click', () => loadCoinChart(modal.dataset.id, 1));
+document.getElementById('btn7d').addEventListener('click', () => loadCoinChart(modal.dataset.id, 7));
+document.getElementById('btn30d').addEventListener('click', () => loadCoinChart(modal.dataset.id, 30));
+
+async function loadCoins(force=false){
+  try{
+    coinsBody.innerHTML = `<tr><td colspan="7" class="center small">Loading coins...</td></tr>`;
+    // per_page max 250
+    const per_page = 250;
+    const res = await fetch(`${API_BASE}/coins/markets?vs_currency=idr&order=market_cap_desc&per_page=${per_page}&page=1&sparkline=false&price_change_percentage=1h,24h,7d`);
     const data = await res.json();
+    coins = data.map(c => ({
+      id: c.id,
+      symbol: c.symbol.toUpperCase(),
+      name: c.name,
+      image: c.image,
+      current_price: c.current_price,
+      market_cap: c.market_cap,
+      total_volume: c.total_volume,
+      market_cap_rank: c.market_cap_rank,
+      price_change_percentage_1h_in_currency: c.price_change_percentage_1h_in_currency ?? 0,
+      price_change_percentage_24h_in_currency: c.price_change_percentage_24h_in_currency ?? 0,
+      price_change_percentage_7d_in_currency: c.price_change_percentage_7d_in_currency ?? 0
+    }));
+    currentPage = 1;
+    renderTable();
+    // auto-refresh every 60s
+    if(!force) setTimeout(() => loadCoins(), 60000);
+  }catch(err){
+    console.error(err);
+    coinsBody.innerHTML = `<tr><td colspan="7" class="center small">Gagal mengambil data. Coba refresh.</td></tr>`;
+  }
+}
 
-    // Tampilkan harga
-    const container = document.querySelector('.card.harga');
-    let html = '<h2>📊 Live Harga Crypto</h2>';
-    coinList.forEach(c => {
-      if (data[c.id]) {
-        html += `<p>${c.symbol}: Rp ${data[c.id].idr.toLocaleString()}</p>`;
+function attachHeaderSort(){
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.dataset.sort;
+      if(!key) return;
+      if(currentSort.key === key){
+        currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.key = key;
+        currentSort.dir = 'asc';
+      }
+      renderTable();
+    });
+  });
+}
+
+function renderTable(){
+  const q = searchInput.value.trim().toLowerCase();
+  filtered = coins.filter(c => (c.name + ' ' + c.symbol).toLowerCase().includes(q));
+  // sort
+  filtered.sort((a,b)=>{
+    const k = currentSort.key;
+    let va = a[k], vb = b[k];
+    if(va === undefined) va = 0;
+    if(vb === undefined) vb = 0;
+    if(typeof va === 'string') va = va.toLowerCase();
+    if(typeof vb === 'string') vb = vb.toLowerCase();
+    if(va < vb) return currentSort.dir === 'asc' ? -1 : 1;
+    if(va > vb) return currentSort.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // pagination
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  if(currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage-1)*perPage;
+  const pageData = filtered.slice(start, start+perPage);
+
+  // render rows
+  if(pageData.length === 0){
+    coinsBody.innerHTML = `<tr><td colspan="7" class="center small">No results.</td></tr>`;
+  } else {
+    coinsBody.innerHTML = '';
+    for(const c of pageData){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="small">${c.market_cap_rank ?? '-'}</td>
+        <td>
+          <div class="coin-name">
+            <img src="${c.image}" alt="${c.symbol}"/>
+            <div>
+              <div style="font-weight:600">${c.name} <span class="badge"> ${c.symbol}</span></div>
+              <div class="small"> </div>
+            </div>
+          </div>
+        </td>
+        <td style="font-weight:600">Rp ${formatNumber(c.current_price)}</td>
+        <td class="small">Rp ${formatNumber(c.market_cap)}</td>
+        <td class="small">Rp ${formatNumber(c.total_volume)}</td>
+        <td class="${(c.price_change_percentage_1h_in_currency||0) >= 0 ? 'green' : 'red'}">${formatPercent(c.price_change_percentage_1h_in_currency)}</td>
+        <td class="${(c.price_change_percentage_24h_in_currency||0) >= 0 ? 'green' : 'red'}">${formatPercent(c.price_change_percentage_24h_in_currency)}</td>
+      `;
+      // click to open chart
+      tr.addEventListener('click', ()=> openModal(c));
+      coinsBody.appendChild(tr);
+    }
+  }
+
+  pageInfo.innerText = `Page ${currentPage} / ${totalPages} • ${total.toLocaleString()} coins`;
+  // disable buttons if needed
+  prevBtn.disabled = currentPage <= 1;
+  nextBtn.disabled = currentPage >= totalPages;
+}
+
+function formatNumber(n){
+  if(n === null || n === undefined) return '-';
+  return Math.round(n).toLocaleString('id-ID');
+}
+function formatPercent(p){
+  if(p === null || p === undefined) return '-';
+  return `${p.toFixed(2)}%`;
+}
+
+// Modal & Chart
+async function openModal(coin){
+  modal.dataset.id = coin.id;
+  modalTitle.innerText = `${coin.name} (${coin.symbol})`;
+  modalSub.innerText = `Price: Rp ${formatNumber(coin.current_price)} • Market Cap: Rp ${formatNumber(coin.market_cap)}`;
+  modal.classList.add('show');
+  await loadCoinChart(coin.id, 7); // default 7 days
+}
+
+function closeModal(){
+  modal.classList.remove('show');
+  if(chartInstance){ chartInstance.destroy(); chartInstance = null; }
+}
+
+async function loadCoinChart(id, days=7){
+  try{
+    chartNote.innerText = 'Loading chart...';
+    if(chartInstance){ chartInstance.destroy(); chartInstance = null; }
+    // CoinGecko market_chart (vs_currency=idr)
+    const res = await fetch(`${API_BASE}/coins/${id}/market_chart?vs_currency=idr&days=${days}`);
+    const data = await res.json();
+    // data.prices = [[timestamp, price], ...]
+    const labels = data.prices.map(p => {
+      const dt = new Date(p[0]);
+      // format label depending on days
+      if(days <= 1) return dt.toLocaleTimeString();
+      return dt.toLocaleDateString();
+    });
+    const prices = data.prices.map(p => p[1]);
+    // draw chart
+    chartInstance = new Chart(chartCanvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets:[{
+          label: `${id} price (IDR)`,
+          data: prices,
+          fill: true,
+          tension: 0.15,
+          pointRadius: 0
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        scales:{
+          x:{ display:true, ticks:{color:'#9aa4b2'} },
+          y:{ display:true, ticks:{color:'#9aa4b2'} }
+        },
+        plugins:{
+          legend:{display:false},
+          tooltip:{mode:'index',intersect:false}
+        }
       }
     });
-    container.innerHTML = html;
-
-    // Dropdown konverter
-    const dropdown = document.getElementById("crypto-type");
-    dropdown.innerHTML = "";
-    coinList.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.id;
-      opt.textContent = c.symbol;
-      dropdown.appendChild(opt);
-    });
-
-    window.cryptoPrices = data;
-  } catch (e) {
-    document.querySelector('.card.harga').innerHTML = '<h2>📊 Live Harga Crypto</h2><p>Error mengambil data.</p>';
+    chartNote.innerText = `Chart last ${days} day(s). Data from CoinGecko.`;
+  }catch(err){
+    console.error(err);
+    chartNote.innerText = 'Gagal memuat chart.';
   }
 }
 
-function convertCrypto() {
-  const amount = parseFloat(document.getElementById("crypto-amount").value);
-  const type = document.getElementById("crypto-type").value;
-  const resultEl = document.getElementById("convert-result");
-  if (!amount || !window.cryptoPrices || !window.cryptoPrices[type]) {
-    resultEl.innerText = "Masukkan jumlah & tunggu harga ter-update!";
-    return;
-  }
-  const price = window.cryptoPrices[type].idr;
-  resultEl.innerText = `≈ Rp ${(amount * price).toLocaleString()}`;
-}
+// initial keyboard: Enter on search goes to first page
+searchInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ currentPage = 1; renderTable(); } });
 
-function calcFee() {
-  const tradeAmount = parseFloat(document.getElementById("trade-amount").value);
-  const feePercent = parseFloat(document.getElementById("fee-percent").value);
-  const resultEl = document.getElementById("fee-result");
-  if (!tradeAmount || !feePercent) {
-    resultEl.innerText = "Masukkan jumlah transaksi dan fee!";
-    return;
-  }
-  const fee = (tradeAmount * feePercent) / 100;
-  resultEl.innerText = `Fee: Rp ${fee.toLocaleString()}`;
-}
-
-getPrices();
-setInterval(getPrices, 60000);
 </script>
 
 </body>
